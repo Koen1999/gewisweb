@@ -80,27 +80,32 @@ class CompanyController extends AbstractActionController
         $companyService = $this->getCompanyService();
         $companyName = $this->params('slugCompanyName');
         $category = $companyService->categoryForSlug($this->params('category'));
-
-        if (is_null($category)) {
+        if ($category === null) {
             return $this->notFoundAction();
         }
-
-        $viewModel = new ViewModel([
-            'category'   => $category,
-            'translator' => $companyService->getTranslator(),
-        ]);
-
-        // A job can be a thesis/internship/etc.
-        $jobCategory = ($category->getLanguageNeutralId() != null) ? $category->getSlug() : null;
-
-        if ($companyName = $this->params('slugCompanyName', null)) {
-            // Retrieve published jobs for one specific company
-            $jobs = $companyService->getActiveJobList([
-                'jobCategory'     => $jobCategory,
-                'companySlugName' => $companyName,
-            ]);
-
-            return $viewModel->setVariables([
+        if (isset($companyName)) {
+            // jobs for a single company
+            $jobList = $companyService->getActiveJobList([
+                    'companySlugName' => $companyName,
+                    'jobCategory' => ($category->getLanguageNeutralId() !== null) ? $category->getSlug() : null
+                ]);
+            if (count($jobList) > 0) {
+                return new ViewModel([
+                    'company' => $companyService->getCompanyBySlugName($companyName),
+                    'jobList' => $jobList,
+                    'category' => $category,
+                    'translator' => $companyService->getTranslator(),
+                    'randomize' => false,
+                ]);
+            }
+            return $this->notFoundAction();
+        }
+        // all jobs
+        $jobs = $companyService->getActiveJobList(
+            ['jobCategory' => ($category->getLanguageNeutralId() !== null) ? $category->getSlug() : null]
+        );
+        if (count($jobs) > 0) {
+            return new ViewModel([
                 'jobList' => $jobs,
                 'translator' => $companyService->getTranslator(),
                 'randomize' => true,
