@@ -109,6 +109,8 @@ class Activity extends AbstractAclService implements ServiceManagerAwareInterfac
             $activityTitle = $activity->getName(); // Fallback on Dutch title
         }
 
+        $activityTime = $activity->getBeginTime()->format('d-m-Y H:i');
+
         $type = 'activity_creation_require_GEFLITST';
         $view = 'email/activity_created_require_GEFLITST';
 
