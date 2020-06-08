@@ -666,13 +666,14 @@ class Company extends AbstractACLService
             $this->saveJob();
 
             $mapper = $this->getLabelMapper();
-            $lang = $job->getLocation();
+            $lang = $job->getLanguage();
             $labelModels = [];
             foreach ($label_IDs as $id)
             {
                 $label = $mapper->findLabelById($id);
                 $labelModels[] = $mapper->siblingLabel($label, $lang);
             }
+            // TODO: LabelModels contains null values because siblingLabel fails somehow
             $this->setLabelsForJob($job, $labelModels);
         }
 
