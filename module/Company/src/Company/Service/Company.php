@@ -5,6 +5,8 @@ namespace Company\Service;
 //use Application\Service\AbstractService;
 use Application\Service\AbstractAclService;
 use Company\Model\Job as JobModel;
+use Company\Model\JobCategory as CategoryModel;
+use Company\Model\JobLabel as LabelModel;
 use Company\Model\Job;
 use Company\Model\JobLabelAssignment;
 
@@ -252,7 +254,7 @@ class Company extends AbstractACLService
         if (!$this->isAllowed('insert')) {
             $translator = $this->getTranslator();
             throw new \User\Permissions\NotAllowedException(
-                $translator->translate('You are not allowed to insert a job')
+                $translator->translate('You are not allowed to insert a job category')
             );
         }
         $mapper = $this->getCategoryMapper();
@@ -282,7 +284,7 @@ class Company extends AbstractACLService
         if (!$this->isAllowed('insert')) {
             $translator = $this->getTranslator();
             throw new \User\Permissions\NotAllowedException(
-                $translator->translate('You are not allowed to insert a job')
+                $translator->translate('You are not allowed to insert a job label')
             );
         }
         if ($label === null) {
@@ -632,7 +634,7 @@ class Company extends AbstractACLService
         $id = -1;
 
         $label_IDs = $data['labels'];
-        if (!is_null($label_IDs)) {
+        if (is_null($label_IDs)) {
             $label_IDs = [];
         }
 
