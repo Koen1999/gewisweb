@@ -708,8 +708,8 @@ class Company extends AbstractACLService
         var_dump($to_remove);
         var_dump($to_add);
 
-        $this->removeLabelsFromJob($job, $to_remove);
-        $this->addLabelsToJob($job, $to_add);
+        $this->removeLabelsFromJob($job->getId(), $to_remove);
+        $this->addLabelsToJob($job->getId(), $to_add);
     }
 
     /**
