@@ -674,20 +674,20 @@ class Company extends AbstractACLService
                 $label = $mapper->findLabelById($id);
                 $labels_lang[] = $mapper->siblingLabel($label, $lang)->getId();
             }
-            $this->setLabelsForJob($job->getId(), $labels_lang);
+            $this->setLabelsForJob($job, $labels_lang);
         }
 
         return true;
     }
 
     /**
-     * @param int $job_id
+     * @param Job $job
      * @param array $labels
      */
-    private function setLabelsForJob($job_id, $labels)
+    private function setLabelsForJob($job, $labels)
     {
         $mapper = $this->getLabelAssignmentMapper();
-        $currentLabelAssignments = $mapper->findAssignmentsByJobId($job_id);
+        $currentLabelAssignments = $mapper->findAssignmentsByJobId($job->getId());
         $currentLabels = [];
         foreach ($currentLabelAssignments as $labelAsg)
         {
@@ -698,34 +698,36 @@ class Company extends AbstractACLService
         $to_add = array_diff($labels, $intersection);
         var_dump($to_remove);
 
-        $this->removeLabelsFromJob($job_id, $to_remove);
-        $this->addLabelsToJob($job_id, $to_add);
+        $this->removeLabelsFromJob($job, $to_remove);
+        $this->addLabelsToJob($job, $to_add);
     }
 
     /**
-     * @param mixed $job
+     * @param Job $job
      * @param array $labels
      */
     private function addLabelsToJob($job, $labels)
     {
-        $mapper = $this->getLabelAssignmentMapper();
+        $mapper_label = $this->getLabelMapper();
+        $mapper_assignment = $this->getLabelAssignmentMapper();
         foreach ($labels as $label) {
             $jobLabelAssignment = new JobLabelAssignment();
             $jobLabelAssignment->setJob($job);
-            $jobLabelAssignment->setLabel($label);
-            $mapper->persist($jobLabelAssignment);
+            $label_model = $mapper_label->findLabelById($label);
+            $jobLabelAssignment->setLabel($label_model);
+            $mapper_assignment->persist($jobLabelAssignment);
         }
     }
 
     /**
-     * @param mixed $job
+     * @param Job $job
      * @param array $labels
      */
     private function removeLabelsFromJob($job, $labels)
     {
         $mapper = $this->getLabelAssignmentMapper();
         foreach ($labels as $label) {
-            $to_remove = $mapper->findAssignmentByJobIdAndLabelId($job, $label);
+            $to_remove = $mapper->findAssignmentByJobIdAndLabelId($job->getId(), $label);
             $mapper->delete($to_remove);
         }
     }
