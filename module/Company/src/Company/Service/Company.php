@@ -673,7 +673,6 @@ class Company extends AbstractACLService
                 $label = $mapper->findLabelById($id);
                 $labelModels[] = $mapper->siblingLabel($label, $lang);
             }
-            // TODO: LabelModels contains null values because siblingLabel fails somehow
             $this->setLabelsForJob($job, $labelModels);
         }
 
@@ -687,7 +686,7 @@ class Company extends AbstractACLService
     private function setLabelsForJob($job, $labels)
     {
         $value_compare_func = (function ($label1, $label2) {
-            if ($label1 == $label2)
+            if ($label1->getLanguageNeutralId() == $label2->getLanguageNeutralId())
             {
                 return 0;
             }
@@ -699,7 +698,7 @@ class Company extends AbstractACLService
         $currentLabels = [];
         foreach ($currentLabelAssignments as $labelAsg)
         {
-            $currentLabels[] = $labelAsg->getLabel()->getId();
+            $currentLabels[] = $labelAsg->getLabel();
         }
         $intersection = array_uintersect($labels, $currentLabels, $value_compare_func);
         $to_remove = array_udiff($currentLabels, $labels, $value_compare_func);
