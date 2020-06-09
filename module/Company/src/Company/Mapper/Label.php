@@ -90,7 +90,7 @@ class Label
         $qb->setParameter('labelID', $label->getLanguageNeutralId());
         $qb->setParameter('language', $lang);
 
-        return $qb->getQuery()->getOneOrNullResult;
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
     public function findAllLabelsById($labelId)
