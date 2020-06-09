@@ -672,19 +672,19 @@ class Company extends AbstractACLService
             foreach ($label_IDs as $id)
             {
                 $label = $mapper->findLabelById($id);
-                $labels_lang[] = $mapper->siblingLabel($label, $lang);
+                $labels_lang[] = $mapper->siblingLabel($label, $lang)->getId();
             }
-            $this->setLabelsForJob($job, $labels_lang);
+            $this->setLabelsForJob($job->getId(), $labels_lang);
         }
 
         return true;
     }
 
     /**
-     * @param Job $job
+     * @param int $job_id
      * @param array $labels
      */
-    private function setLabelsForJob($job, $labels)
+    private function setLabelsForJob($job_id, $labels)
     {
         $value_compare_func = (function ($label1, $label2) {
             if ($label1 == $label2)
@@ -695,7 +695,7 @@ class Company extends AbstractACLService
         });
 
         $mapper = $this->getLabelAssignmentMapper();
-        $currentLabelAssignments = $mapper->findAssignmentsByJobId($job->getId());
+        $currentLabelAssignments = $mapper->findAssignmentsByJobId($job_id);
         $currentLabels = [];
         foreach ($currentLabelAssignments as $labelAsg)
         {
@@ -708,8 +708,8 @@ class Company extends AbstractACLService
         var_dump($to_remove);
         var_dump($to_add);
 
-        $this->removeLabelsFromJob($job->getId(), $to_remove);
-        $this->addLabelsToJob($job->getId(), $to_add);
+        $this->removeLabelsFromJob($job_id, $to_remove);
+        $this->addLabelsToJob($job_id, $to_add);
     }
 
     /**
