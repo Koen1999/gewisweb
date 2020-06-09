@@ -55,8 +55,8 @@ $this->headTitle($category->getPluralName());
                         </a>
                         <div>
                             <?php foreach ($job->getLabels() as $labelAsg): ?>
-                                <?= $label = $labelAsg->getLabel()?>
-                                <span class="label label-default job-label" data-label="<?= $label->getSlug() ?>" data-toggle="tooltip" title="<?= $label->getName() ?>"><?= $label->getSlug() ?></span>
+                                <?= $label = $labelAsg->getLabel(); ?>
+                                <span class="label label-default job-label" data-label="<?= $label->getSlug(); ?>" data-toggle="tooltip" title="<?= $label->getName(); ?>"><?= $label->getSlug(); ?></span>
                             <?php endforeach; ?>
                         </div>
                         <div class="">
