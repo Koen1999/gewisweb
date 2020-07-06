@@ -451,7 +451,7 @@ class Job
     }
 
     /**
-     * Get the labels
+     * Get the language neutral IDs of the assigned labels
      *
      * @return array
      */
