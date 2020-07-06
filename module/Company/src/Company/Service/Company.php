@@ -1114,10 +1114,9 @@ class Company extends AbstractACLService
     public function getLanguageNeutralLabelsFromJob($job)
     {
         $labels = $job->getLabels();
-        $mapper = $this->getLabelMapper();
         $languageNeutralLabels = [];
         foreach ($labels as $label) {
-            $labelModel = $mapper->findLabelById($label);
+            $labelModel = $label->getLabel();
             $id = $labelModel->getLanguageNeutralId();
             $languageNeutralLabels[] = $id;
         }

@@ -441,7 +441,7 @@ class Job
     }
 
     /**
-     * Get the labels
+     * Get the labels. Returns an array of JobLabelAssignments
      *
      * @return array
      */
