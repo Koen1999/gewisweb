@@ -1108,22 +1108,6 @@ class Company extends AbstractACLService
     }
 
     /**
-     * @param Job $job
-     * @return array
-     */
-    public function getLanguageNeutralLabelsFromJob($job)
-    {
-        $labels = $job->getLabels();
-        $languageNeutralLabels = [];
-        foreach ($labels as $label) {
-            $labelModel = $label->getLabel();
-            $id = $labelModel->getLanguageNeutralId();
-            $languageNeutralLabels[] = $id;
-        }
-        return $languageNeutralLabels;
-    }
-
-    /**
      * Get the default resource ID.
      *
      * @return string
