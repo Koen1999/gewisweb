@@ -207,11 +207,12 @@ class EditJob extends CollectionBaseFieldsetAwareForm
 
     public function setLabels($labels)
     {
-        $allLabels = $this->labels->getValueOptions();
+        $labelsElement = $this->getElement('labels');
+        $allLabels = $labelsElement->getValueOptions();
         foreach ($labels as $label) {
             $allLabels[$label] = true;
         }
-        $this->labels->setValueOptions($allLabels);
+        $labelsElement->setValueOptions($allLabels);
     }
 
     public function getLanguages()
