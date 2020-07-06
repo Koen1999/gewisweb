@@ -483,7 +483,7 @@ class AdminController extends AbstractActionController
         }
         $languages = array_keys($jobDict);
         $jobForm->setLanguages($languages);
-        $labels = current($jobDict)->getLanguageNeutralLabels();
+        $labels = $companyService->getLanguageNeutralLabelsFromJob(current($jobDict));
         $jobForm->setLabels($labels);
         $jobForm->bind($jobDict);
 
