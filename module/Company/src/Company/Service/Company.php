@@ -793,7 +793,7 @@ class Company extends AbstractACLService
     /**
      * Deletes the given job
      *
-     * @param mixed $packageID
+     * @param mixed $packageId
      */
     public function deleteJob($jobID)
     {

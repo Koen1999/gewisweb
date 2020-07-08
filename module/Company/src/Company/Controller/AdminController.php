@@ -644,14 +644,14 @@ class AdminController extends AbstractActionController
         $this->getCompanyService()->deleteJob($jobID);
 
         $companyName = $this->params('slugCompanyName');
-        $packageId = $this->params('packageID');
+        $packageId = $this->params('packageId');
 
         // Redirect to package page
         return $this->redirect()->toRoute(
             'admin_company/editCompany/editPackage',
             [
                 'slugCompanyName' => $companyName,
-                'packageID' => $packageId
+                'packageId' => $packageId
             ]
         );
     }
