@@ -152,7 +152,7 @@ class Company extends AbstractACLService
     {
         $nonemptyCategories = [];
         foreach ($categories as $category) {
-            if (count($this->getActiveJobList(['jobCategoryID' => $category->getId()])) > 0) {
+            if (count($this->getActiveJobList(['jobCategoryId' => $category->getId()])) > 0) {
                 $nonemptyCategories[] = $category;
             }
         }
@@ -169,7 +169,7 @@ class Company extends AbstractACLService
     {
         $nonemptyLabels = [];
         foreach ($labels as $label) {
-            if (count($this->getActiveJobList(['jobCategoryID' => $label->getId()])) > 0) {
+            if (count($this->getActiveJobList(['jobCategoryId' => $label->getId()])) > 0) {
                 $nonemptyLabels[] = $label;
             }
         }
@@ -245,161 +245,153 @@ class Company extends AbstractACLService
     }
 
     /**
-     * Inserts a category, and binds it to the given package
+     * Creates a new JobCategory.
      *
-     * @param mixed $packageID
+     * @param  array $data Category data from the EditCategory form.
+     * @return bool|int Returns false on failure, and the languageNeutralId on success
      */
-    public function insertCategory($lang, $id, $category = null)
+    public function createCategory($data)
     {
-        if (!$this->isAllowed('insert')) {
-            $translator = $this->getTranslator();
-            throw new \User\Permissions\NotAllowedException(
-                $translator->translate('You are not allowed to insert a job category')
-            );
-        }
-        $mapper = $this->getCategoryMapper();
-        if ($category === null) {
+        $categoryDict = [];
+        foreach ($this->getLanguages() as $lang) {
             $category = new CategoryModel();
+            $category->setLanguage($lang);
+            $categoryDict[$lang] = $category;
         }
-        $category->setLanguage($lang);
-        $category->setLanguageNeutralId($id);
-        $category->setHidden(false);
-        $mapper->persist($category);
-        $mapper->save();
-        if ($id == -1) {
-            $id = $category->getId();
-        }
-        $category->setLanguageNeutralId($id);
 
-        return $category;
+        return $this->saveCategoryData("", $categoryDict, $data);
     }
 
     /**
-     * Inserts a label, and binds it to the given package
+     * Checks if the data is valid, and if it is, saves the JobCategory
      *
-     * @param mixed $packageID
-     */
-    public function insertLabel($lang, $id, $label = null)
-    {
-        if (!$this->isAllowed('insert')) {
-            $translator = $this->getTranslator();
-            throw new \User\Permissions\NotAllowedException(
-                $translator->translate('You are not allowed to insert a job label')
-            );
-        }
-        if ($label === null) {
-            $label = new LabelModel();
-        }
-        $mapper = $this->getLabelMapper();
-        $label->setLanguage($lang);
-        $label->setLanguageNeutralId($id);
-        $label->setHidden(false);
-        $mapper->persist($label);
-        $mapper->save();
-        if ($id == -1) {
-            $id = $label->getId();
-        }
-        $label->setLanguageNeutralId($id);
-
-        return $label;
-    }
-
-    /**
-     * Checks if the data is valid, and if it is, inserts the category, and sets
-     * all data
+     * @param int|string $languageNeutralId Identifier of the JobCategories to save
+     * @param array $categories The JobCategories to save
+     * @param array $data The (new) data to save
      *
-     * @param mixed $data
+     * @return bool|int Returns false on failure, and the languageNeutralId on success
      */
-    public function insertCategoryByData($data, $files)
+    public function saveCategoryData($languageNeutralId, $categories, $data)
     {
         $categoryForm = $this->getCategoryForm();
-        $mergedData = array_merge_recursive(
-            $data->toArray(),
-            $files->toArray()
-        );
-        $categoryForm->setData($mergedData);
-        $arr = [];
-        $categoryForm->get('categories')->setObject($arr);
-        $valid = $categoryForm->isValid();
-        if (!$valid) {
-            return null;
+        $categoryForm->bind($categories);
+        $categoryForm->setData($data);
+        
+        if (!$categoryForm->isValid()) {
+            return false;
         }
-        $newCategories = $categoryForm->getObject();
+
         $id = -1;
-        foreach ($newCategories as $lang => $category) {
-            $arr[$lang] = $this->insertCategory($lang, $id, $category);
-            if ($id == -1) {
-                $id = current($arr)->getId();
-            }
+        foreach ($categories as $category) {
+            $id = $this->setLanguageNeutralCategoryId($id, $category, $languageNeutralId);
+            $this->getCategoryMapper()->persist($category);
+            $this->saveCategory();
         }
-        return $arr;
+
+        return (($languageNeutralId == "") ? $id : $languageNeutralId);
     }
 
     /**
-     * Checks if the data is valid, and if it is, inserts the label, and sets
-     * all data
+     * Sets the languageNeutralId for this JobCategory.
      *
-     * @param mixed $data
+     * @param int $id The id of the JobCategory
+     * @param JobCategory $category The JobCategory
+     * @param int|string $languageNeutralId The languageNeutralId of the JobCategory
+     *
+     * @return int
      */
-    public function insertLabelByData($data, $files)
+    private function setLanguageNeutralCategoryId($id, $category, $languageNeutralId)
+    {
+        if ($languageNeutralId == "") {
+            $category->setLanguageNeutralId($id);
+            $this->getCategoryMapper()->persist($category);
+            $this->saveCategory();
+
+            if ($id == -1) {
+                $id = $category->getId();
+            }
+
+            $category->setLanguageNeutralId($id);
+            return $id;
+        }
+
+        $category->setLanguageNeutralId($languageNeutralId);
+        return $id;
+    }
+
+    /**
+     * Creates a new JobLabel.
+     *
+     * @param array $data Label data from the EditLabel form
+     * @return bool|int Returns false on failure, and the languageNeutralId on success
+     */
+    public function createLabel($data)
+    {
+        $labelDict = [];
+        foreach ($this->getLanguages() as $lang) {
+            $label = new LabelModel();
+            $label->setLanguage($lang);
+            $labelDict[$lang] = $label;
+        }
+
+        return $this->saveLabelData("", $labelDict, $data);
+    }
+
+    /**
+     * Checks if the data is valid, and if it is, saves the JobLabel
+     *
+     * @param int|string $languageNeutralId Identifier of the JobLabel to save
+     * @param array $labels The JobLabels to save
+     * @param array $data The data to validate, and apply to the label
+     *
+     * @return bool|int
+     */
+    public function saveLabelData($languageNeutralId, $labels, $data)
     {
         $labelForm = $this->getLabelForm();
-        $mergedData = array_merge_recursive(
-            $data->toArray(),
-            $files->toArray()
-        );
-        $labelForm->setData($mergedData);
-        $arr = [];
-        $labelForm->get('labels')->setObject($arr);
-        $valid = $labelForm->isValid();
-        if (!$valid) {
-            return null;
+        $labelForm->bind($labels);
+        $labelForm->setData($data);
+        
+        if (!$labelForm->isValid()) {
+            return false;
         }
-        $newLabels = $labelForm->getObject();
+
         $id = -1;
-        foreach ($newLabels as $lang => $label) {
-            $arr[$lang] = $this->insertLabel($lang, $id, $label);
+        foreach ($labels as $label) {
+            $id = $this->setLanguageNeutralLabelId($id, $label, $languageNeutralId);
+            $this->getLabelMapper()->persist($label);
+            $this->saveLabel();
+        }
+
+        return (($languageNeutralId == "") ? $id : $languageNeutralId);
+    }
+
+    /**
+     * Sets the languageNeutralId for this JobLabel.
+     *
+     * @param int $id The id of the JobLabel
+     * @param JobLabel $label The JobLabel
+     * @param int|string $languageNeutralId The languageNeutralId of the JobLabel
+     *
+     * @return int
+     */
+    private function setLanguageNeutralLabelId($id, $label, $languageNeutralId)
+    {
+        if ($languageNeutralId == "") {
+            $label->setLanguageNeutralId($id);
+            $this->getLabelMapper()->persist($label);
+            $this->saveLabel();
+
             if ($id == -1) {
-                $id = current($arr)->getId();
+                $id = $label->getId();
             }
-        }
-        return $arr;
-    }
 
-    /**
-     * Checks if the data is valid (if nonnull), and if it is saves the category
-     *
-     * @param array $data The data to validate, and apply to the category
-     */
-    public function saveCategory($data = null)
-    {
-        if ($data !== null) {
-            $categoryForm = $this->getCategoryForm();
-            $categoryForm->setData($data);
-            if ($categoryForm->isValid()) {
-                $this->saveCategory();
-                return true;
-            }
-            return;
+            $label->setLanguageNeutralId($id);
+            return $id;
         }
-    }
 
-    /**
-     * Checks if the data is valid (if nonnull), and if it is saves the label
-     *
-     * @param array $data The data to validate, and apply to the label
-     */
-    public function saveLabel($data = null)
-    {
-        if ($data !== null) {
-            $labelForm = $this->getLabelForm();
-            $labelForm->setData($data);
-            if ($labelForm->isValid()) {
-                $this->saveLabel();
-                return true;
-            }
-            return;
-        }
+        $label->setLanguageNeutralId($languageNeutralId);
+        return $id;
     }
 
     /**
@@ -467,6 +459,24 @@ class Company extends AbstractACLService
             $this->saveCompany();
             return true;
         }
+    }
+
+    /**
+     * Saves all modified categories
+     *
+     */
+    public function saveCategory()
+    {
+        $this->getCategoryMapper()->save();
+    }
+
+    /**
+     * Saves all modified labels
+     *
+     */
+    public function saveLabel()
+    {
+        $this->getLabelMapper()->save();
     }
 
     /**
@@ -589,14 +599,14 @@ class Company extends AbstractACLService
     /**
      * Creates a new job and adds it to the specified package.
      *
-     * @param integer $packageID
+     * @param integer $packageId
      * @param array $data
      * @param array $files
-     * @return bool|JobModel
+     * @return bool
      */
-    public function createJob($packageID, $data, $files)
+    public function createJob($packageId, $data, $files)
     {
-        $package = $this->getPackageMapper()->findPackage($packageID);
+        $package = $this->getPackageMapper()->findPackage($packageId);
         $jobs = [];
         foreach ($this->getLanguages() as $lang) {
             $job = new JobModel();
@@ -610,11 +620,12 @@ class Company extends AbstractACLService
     /**
      * Checks if the data is valid, and if it is, saves the Job
      *
-     * @param JobModel $job
-     * @param array $data
-     * @param array $files
+     * @param int|string $languageNeutralId Identifier of the Job to save
+     * @param array $jobs The Job to save
+     * @param array $data The (new) data to save
+     * @param array $files The (new) files to save
      *
-     * @return JobModel|bool
+     * @return bool
      */
     public function saveJobData($languageNeutralId, $jobs, $data, $files)
     {
@@ -633,9 +644,9 @@ class Company extends AbstractACLService
         }
         $id = -1;
 
-        $labelIDs = $data['labels'];
-        if (is_null($labelIDs)) {
-            $labelIDs = [];
+        $labelIds = $data['labels'];
+        if (is_null($labelIds)) {
+            $labelIds = [];
         }
 
         foreach ($jobs as $lang => $job) {
@@ -658,7 +669,7 @@ class Company extends AbstractACLService
             }
 
             $job->setTimeStamp(new \DateTime());
-            $id = $this->setLanguageNeutralId($id, $job, $languageNeutralId);
+            $id = $this->setLanguageNeutralJobId($id, $job, $languageNeutralId);
             $this->getJobMapper()->persist($job);
             $this->saveJob();
 
@@ -666,7 +677,7 @@ class Company extends AbstractACLService
             $lang = $job->getLanguage();
             // Contains language specific labels
             $labelsLangBased = [];
-            foreach ($labelIDs as $labelId) {
+            foreach ($labelIds as $labelId) {
                 $label = $mapper->findLabelById($labelId);
                 $labelsLangBased[] = $mapper->siblingLabel($label, $lang)->getId();
             }
@@ -726,12 +737,13 @@ class Company extends AbstractACLService
         }
     }
 
-    private function setLanguageNeutralId($id, $job, $languageNeutralId)
+    private function setLanguageNeutralJobId($id, $job, $languageNeutralId)
     {
         if ($languageNeutralId == "") {
             $job->setLanguageNeutralId($id);
             $this->getJobMapper()->persist($job);
-            $this->getJobMapper()->save();
+            $this->saveJob();
+
             if ($id == -1) {
                 $id = $job->getId();
             }
@@ -745,9 +757,9 @@ class Company extends AbstractACLService
     /**
      * Inserts a job, and binds it to the given package
      *
-     * @param mixed $packageID
+     * @param mixed $packageId
      */
-    public function insertJobIntoPackageID($packageID, $lang, $languageNeutralId)
+    public function insertJobIntoPackageId($packageId, $lang, $languageNeutralId)
     {
         if (!$this->isAllowed('insert')) {
             $translator = $this->getTranslator();
@@ -755,7 +767,7 @@ class Company extends AbstractACLService
                 $translator->translate('You are not allowed to insert a job')
             );
         }
-        $package = $this->getEditablePackage($packageID);
+        $package = $this->getEditablePackage($packageId);
         $result = $this->getJobMapper()->insertIntoPackage($package, $lang, $languageNeutralId);
 
         return $result;
@@ -764,9 +776,9 @@ class Company extends AbstractACLService
     /**
      * Deletes the given package
      *
-     * @param mixed $packageID
+     * @param mixed $packageId
      */
-    public function deletePackage($packageID)
+    public function deletePackage($packageId)
     {
         if (!$this->isAllowed('delete')) {
             $translator = $this->getTranslator();
@@ -774,8 +786,8 @@ class Company extends AbstractACLService
                 $translator->translate('You are not allowed to delete packages')
             );
         }
-        $this->getPackageMapper()->delete($packageID);
-        $this->getBannerPackageMapper()->delete($packageID);
+        $this->getPackageMapper()->delete($packageId);
+        $this->getBannerPackageMapper()->delete($packageId);
     }
 
     /**
@@ -824,9 +836,9 @@ class Company extends AbstractACLService
     /**
      * Returns a persistent category
      *
-     * @param mixed $categoryID
+     * @param int $categoryId
      */
-    public function getAllCategoriesById($categoryID)
+    public function getAllCategoriesById($categoryId)
     {
         if (!$this->isAllowed('edit')) {
             $translator = $this->getTranslator();
@@ -834,20 +846,17 @@ class Company extends AbstractACLService
                 $translator->translate('You are not allowed to edit packages')
             );
         }
-        if (is_null($categoryID)) {
-            throw new \Exception('Invalid argument');
-        }
 
-        return $this->getCategoryMapper()->findAllCategoriesById($categoryID);
+        return $this->getCategoryMapper()->findAllCategoriesById($categoryId);
     }
 
 
     /**
      * Returns a persistent label
      *
-     * @param mixed $labelID
+     * @param int $labelId
      */
-    public function getAllLabelsById($labelID)
+    public function getAllLabelsById($labelId)
     {
         if (!$this->isAllowed('edit')) {
             $translator = $this->getTranslator();
@@ -855,19 +864,16 @@ class Company extends AbstractACLService
                 $translator->translate('You are not allowed to edit packages')
             );
         }
-        if (is_null($labelID)) {
-            throw new \Exception('Invalid argument');
-        }
 
-        return $this->getLabelMapper()->findAllLabelsById($labelID);
+        return $this->getLabelMapper()->findAllLabelsById($labelId);
     }
 
     /**
      * Returns a persistent package
      *
-     * @param mixed $packageID
+     * @param mixed $packageId
      */
-    public function getEditablePackage($packageID)
+    public function getEditablePackage($packageId)
     {
         if (!$this->isAllowed('edit')) {
             $translator = $this->getTranslator();
@@ -875,15 +881,15 @@ class Company extends AbstractACLService
                 $translator->translate('You are not allowed to edit packages')
             );
         }
-        if (is_null($packageID)) {
+        if (is_null($packageId)) {
             throw new \Exception('Invalid argument');
         }
-        $package = $this->getPackageMapper()->findEditablePackage($packageID);
+        $package = $this->getPackageMapper()->findEditablePackage($packageId);
         if (is_null($package)) {
-            $package = $this->getBannerPackageMapper()->findEditablePackage($packageID);
+            $package = $this->getBannerPackageMapper()->findEditablePackage($packageId);
         }
         if (is_null($package)) {
-            $package = $this->getFeaturedPackageMapper()->findEditablePackage($packageID);
+            $package = $this->getFeaturedPackageMapper()->findEditablePackage($packageId);
         }
 
         return $package;
@@ -961,14 +967,14 @@ class Company extends AbstractACLService
     /**
      * Get the Category Edit form.
      *
-     * @return Category Edit form
+     * @return EditCategory For for editing JobCategories
      */
     public function getCategoryForm()
     {
         if (!$this->isAllowed('edit')) {
             $translator = $this->getTranslator();
             throw new \User\Permissions\NotAllowedException(
-                $translator->translate('You are not allowed to edit jobs')
+                $translator->translate('You are not allowed to edit categories')
             );
         }
         return $this->sm->get('company_admin_edit_category_form');
@@ -977,14 +983,14 @@ class Company extends AbstractACLService
     /**
      * Get the Label Edit form.
      *
-     * @return Label Edit form
+     * @return EditLabel Form for editing JobLabels
      */
     public function getLabelForm()
     {
         if (!$this->isAllowed('edit')) {
             $translator = $this->getTranslator();
             throw new \User\Permissions\NotAllowedException(
-                $translator->translate('You are not allowed to edit jobs')
+                $translator->translate('You are not allowed to edit labels')
             );
         }
         return $this->sm->get('company_admin_edit_label_form');
@@ -1009,6 +1015,7 @@ class Company extends AbstractACLService
     /**
      * Returns the form for entering jobs
      *
+     * @return EditJob Job edit form
      */
     public function getJobForm()
     {
@@ -1121,7 +1128,7 @@ class Company extends AbstractACLService
     }
 
     /**
-     * Get the default resource ID.
+     * Get the default resource Id.
      *
      * @return string
      */
